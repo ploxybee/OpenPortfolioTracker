@@ -1,0 +1,4 @@
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/tigerfintech/openapi-go-sdk v0.5.1 h1:PieWo6UhtdVNfHM6Rf90y2vEs6++9Vf7vBlmQ/ryB4A=
+github.com/tigerfintech/openapi-go-sdk v0.5.1/go.mod h1:ATLMxyNtN2RRl/N39rVwonjaDEVka1zJ61sTyOWrKYU=
