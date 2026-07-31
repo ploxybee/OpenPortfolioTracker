@@ -19,7 +19,10 @@ func main() {
 		port = "8080"
 	}
 
-	provider := portfolio.NewTigerProviderFromEnv()
+	provider, err := portfolio.NewManagedProviderFromEnv(portfolio.NewTigerProviderFromEnv())
+	if err != nil {
+		log.Fatalf("invalid portfolio configuration: %v", err)
+	}
 	server := api.NewServer(provider)
 	httpServer := &http.Server{
 		Addr:              ":" + port,

@@ -126,7 +126,7 @@ func buildSnapshot(positions []model.Position, mode, baseCurrency string, rates 
 		rate := rates[currencyCode(p.Currency)]
 		marketValue := p.MarketValue * rate
 		total += marketValue
-		holdings = append(holdings, Holding{Symbol: p.Symbol, Name: firstNonBlank(p.Name, p.Symbol), Market: p.Market, Country: countryForMarket(p.Market), Currency: baseCurrency, NativeCurrency: p.Currency, Quantity: p.PositionQty, AverageCost: p.AverageCost, LatestPrice: p.LatestPrice, MarketValue: marketValue, UnrealizedPnL: p.UnrealizedPnl * rate, UnrealizedPnLPc: p.UnrealizedPnlPercent})
+		holdings = append(holdings, Holding{Symbol: p.Symbol, Name: firstNonBlank(p.Name, p.Symbol), Account: "Tiger Brokers", AssetClass: "Equities", Market: p.Market, Country: countryForMarket(p.Market), Currency: baseCurrency, NativeCurrency: p.Currency, Quantity: p.PositionQty, AverageCost: p.AverageCost, LatestPrice: p.LatestPrice, MarketValue: marketValue, UnrealizedPnL: p.UnrealizedPnl * rate, UnrealizedPnLPc: p.UnrealizedPnlPercent})
 	}
 	for i := range holdings {
 		if total != 0 {
