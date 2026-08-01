@@ -7,11 +7,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
+	appconfig "github.com/ploxybee/OpenPortfolioTracker/config"
 	"github.com/tigerfintech/openapi-go-sdk/config"
 	"github.com/tigerfintech/openapi-go-sdk/model"
 	"github.com/tigerfintech/openapi-go-sdk/trade"
@@ -22,15 +22,14 @@ type TigerProvider struct {
 	tigerID, privateKey, account, license, baseCurrency string
 }
 
-func NewTigerProviderFromEnv() *TigerProvider {
-	p := &TigerProvider{tigerID: os.Getenv("TIGER_ID"), privateKey: os.Getenv("TIGER_PRIVATE_KEY"), account: os.Getenv("TIGER_ACCOUNT"), license: os.Getenv("TIGER_LICENSE"), baseCurrency: os.Getenv("PORTFOLIO_BASE_CURRENCY")}
-	if p.baseCurrency == "" {
-		p.baseCurrency = "USD"
-	}
+// NewTigerProvider creates a Tiger provider and enables demo mode without credentials.
+func NewTigerProvider(config appconfig.TigerConfig) *TigerProvider {
+	p := &TigerProvider{tigerID: config.ID, privateKey: config.PrivateKey, account: config.Account, license: config.License, baseCurrency: config.BaseCurrency}
 	p.configured = p.tigerID != "" && p.privateKey != "" && p.account != ""
 	return p
 }
 
+// Snapshot retrieves positions and converts their values to one base currency.
 func (p *TigerProvider) Snapshot(ctx context.Context) (Snapshot, error) {
 	if !p.configured {
 		return demoSnapshot(), nil
@@ -88,6 +87,7 @@ func frankfurterFXRates(ctx context.Context, currencies []string, baseCurrency s
 	return rates, nil
 }
 
+// frankfurterRate fetches and validates one direct currency conversion rate.
 func frankfurterRate(ctx context.Context, client *http.Client, from, to string) (float64, error) {
 	endpoint := frankfurterAPI + "/" + url.PathEscape(from) + "/" + url.PathEscape(to)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -116,6 +116,7 @@ func frankfurterRate(ctx context.Context, client *http.Client, from, to string) 
 	return payload.Rate, nil
 }
 
+// buildSnapshot converts broker positions into the neutral portfolio contract.
 func buildSnapshot(positions []model.Position, mode, baseCurrency string, rates map[string]float64) Snapshot {
 	holdings := make([]Holding, 0, len(positions))
 	total := 0.0
@@ -137,6 +138,7 @@ func buildSnapshot(positions []model.Position, mode, baseCurrency string, rates 
 	return Snapshot{Broker: "Tiger Brokers", Mode: mode, UpdatedAt: time.Now().UTC(), TotalValue: total, Currency: baseCurrency, Holdings: holdings, CountryAllocation: allocations(holdings, func(h Holding) string { return h.Country }), MarketAllocation: allocations(holdings, func(h Holding) string { return h.Market })}
 }
 
+// validateFXRates ensures every valued position has a conversion rate.
 func validateFXRates(positions []model.Position, rates map[string]float64) error {
 	for _, position := range positions {
 		if position.MarketValue == 0 {
@@ -149,6 +151,7 @@ func validateFXRates(positions []model.Position, rates map[string]float64) error
 	return nil
 }
 
+// holdingCurrencies returns the distinct currencies used by valued positions.
 func holdingCurrencies(positions []model.Position) []string {
 	set := map[string]struct{}{}
 	for _, position := range positions {
@@ -166,10 +169,12 @@ func holdingCurrencies(positions []model.Position) []string {
 	return currencies
 }
 
+// currencyCode normalizes a currency code for map lookups.
 func currencyCode(currency string) string {
 	return strings.ToUpper(strings.TrimSpace(currency))
 }
 
+// allocations groups holdings by a selected label and calculates their weights.
 func allocations(holdings []Holding, key func(Holding) string) []Allocation {
 	totals := map[string]float64{}
 	total := 0.0
@@ -188,6 +193,8 @@ func allocations(holdings []Holding, key func(Holding) string) []Allocation {
 	sort.Slice(out, func(i, j int) bool { return out[i].Value > out[j].Value })
 	return out
 }
+
+// firstNonBlank returns the first usable label, or a safe fallback.
 func firstNonBlank(values ...string) string {
 	for _, v := range values {
 		if v != "" {
@@ -196,6 +203,8 @@ func firstNonBlank(values ...string) string {
 	}
 	return "Unknown"
 }
+
+// countryForMarket maps a broker market code to its country label.
 func countryForMarket(market string) string {
 	switch strings.ToUpper(market) {
 	case "US":
@@ -214,6 +223,8 @@ func countryForMarket(market string) string {
 		return "Other"
 	}
 }
+
+// demoSnapshot provides sample holdings when Tiger credentials are absent.
 func demoSnapshot() Snapshot {
 	positions := []model.Position{{Symbol: "VOO", Name: "Vanguard S&P 500 ETF", Market: "US", Currency: "USD", PositionQty: 12, AverageCost: 475.10, LatestPrice: 529.42, MarketValue: 6353.04, UnrealizedPnl: 651.84, UnrealizedPnlPercent: 11.43}, {Symbol: "AAPL", Name: "Apple Inc.", Market: "US", Currency: "USD", PositionQty: 18, AverageCost: 174.20, LatestPrice: 214.40, MarketValue: 3859.20, UnrealizedPnl: 723.60, UnrealizedPnlPercent: 23.08}, {Symbol: "D05", Name: "DBS Group", Market: "SG", Currency: "USD", PositionQty: 100, AverageCost: 34.80, LatestPrice: 38.50, MarketValue: 2850, UnrealizedPnl: 274, UnrealizedPnlPercent: 10.63}, {Symbol: "0700", Name: "Tencent Holdings", Market: "HK", Currency: "USD", PositionQty: 40, AverageCost: 310, LatestPrice: 375, MarketValue: 1923, UnrealizedPnl: 333, UnrealizedPnlPercent: 20.97}}
 	return buildSnapshot(positions, "demo", "USD", map[string]float64{"USD": 1})

@@ -20,6 +20,7 @@ Tiger OpenAPI adapter ──► Tiger Brokers
 
 - `frontend/` renders the dashboard only. It never receives broker credentials.
 - `backend/cmd/api` starts the HTTP service.
+- `backend/config` loads and validates environment configuration before the service starts.
 - `backend/internal/api` owns HTTP concerns: routing, CORS, errors, and JSON.
 - `backend/internal/portfolio` owns the broker-neutral data model, allocation calculations, and provider adapters.
 

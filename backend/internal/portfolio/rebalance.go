@@ -1,39 +1,11 @@
 package portfolio
 
 import (
-	"fmt"
 	"math"
 	"sort"
-	"strconv"
-	"strings"
 )
 
-func parseTargets(value string) (map[string]float64, error) {
-	if strings.TrimSpace(value) == "" {
-		return map[string]float64{"Equities": 1}, nil
-	}
-	targets := map[string]float64{}
-	for _, pair := range strings.Split(value, ",") {
-		key, raw, ok := strings.Cut(pair, "=")
-		if !ok || strings.TrimSpace(key) == "" {
-			return nil, fmt.Errorf("invalid PORTFOLIO_TARGETS entry %q", pair)
-		}
-		percentage, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
-		if err != nil || percentage < 0 {
-			return nil, fmt.Errorf("invalid target percentage for %s", key)
-		}
-		targets[strings.TrimSpace(key)] = percentage / 100
-	}
-	sum := 0.0
-	for _, target := range targets {
-		sum += target
-	}
-	if math.Abs(sum-1) > 0.0001 {
-		return nil, fmt.Errorf("PORTFOLIO_TARGETS must total 100%%; received %.2f%%", sum*100)
-	}
-	return targets, nil
-}
-
+// targetAllocations compares current holdings with their target allocations.
 func targetAllocations(holdings []Holding, targets map[string]float64) []Allocation {
 	values := map[string]float64{}
 	total := 0.0
@@ -59,6 +31,7 @@ func targetAllocations(holdings []Holding, targets map[string]float64) []Allocat
 	return out
 }
 
+// contributionPlan directs new funds to the largest target shortfalls first.
 func contributionPlan(totalValue float64, allocations []Allocation, contribution float64) []ContributionSuggestion {
 	if contribution <= 0 {
 		return []ContributionSuggestion{}

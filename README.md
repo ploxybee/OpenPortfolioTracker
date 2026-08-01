@@ -23,9 +23,14 @@ TIGER_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 TIGER_ACCOUNT=your_account_number
 TIGER_LICENSE=TBNZ
 PORTFOLIO_BASE_CURRENCY=USD
+PORTFOLIO_TARGETS=Equities=70,Bonds=20,Cash=10
+PORTFOLIO_REBALANCE_TOLERANCE=5
+PORTFOLIO_MONTHLY_CONTRIBUTION=1000
 ```
 
 Then run `make dev`. The backend loads `backend/.env` automatically and only reads positions; it contains no order-placement routes. A portfolio containing one currency works directly. For mixed-currency portfolios, set `PORTFOLIO_BASE_CURRENCY` to your preferred reporting currency (for example `SGD`). The backend obtains daily reference conversion rates from Frankfurter; no additional API key is required.
+
+`PORTFOLIO_TARGETS` must total 100. `PORTFOLIO_MONTHLY_CONTRIBUTION` is in the base currency and is used only to create contribution suggestions; the service never places orders.
 
 Tiger's credentials must never be placed in the frontend or committed. See [Tiger's Go SDK documentation](https://pkg.go.dev/github.com/tigerfintech/openapi-go-sdk) for credential setup and account permissions.
 

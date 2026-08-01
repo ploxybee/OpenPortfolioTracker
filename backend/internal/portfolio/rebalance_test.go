@@ -30,9 +30,3 @@ func TestContributionPlanWithoutContributionIsEmpty(t *testing.T) {
 		t.Fatalf("expected an empty contribution plan, got %#v", plan)
 	}
 }
-
-func TestParseTargetsRejectsInvalidTotal(t *testing.T) {
-	if _, err := parseTargets("Equities=80,Bonds=10"); err == nil {
-		t.Fatal("expected invalid targets to be rejected")
-	}
-}

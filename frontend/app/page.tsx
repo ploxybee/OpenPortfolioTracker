@@ -36,14 +36,17 @@ type Snapshot = {
 };
 
 const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Formats a numeric value as whole-currency display text.
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
   }).format(value);
+// Formats a percentage with one decimal place.
 const pct = (value: number) => `${value.toFixed(1)}%`;
 
+// Home loads and displays the current portfolio dashboard.
 export default function Home() {
   const [data, setData] = useState<Snapshot>();
   const [error, setError] = useState<string>();
@@ -175,6 +178,7 @@ export default function Home() {
     </main>
   );
 }
+// AllocationCard shows actual allocation against each target.
 function AllocationCard({
   items,
   tolerance,
