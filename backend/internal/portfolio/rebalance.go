@@ -61,7 +61,7 @@ func targetAllocations(holdings []Holding, targets map[string]float64) []Allocat
 
 func contributionPlan(totalValue float64, allocations []Allocation, contribution float64) []ContributionSuggestion {
 	if contribution <= 0 {
-		return nil
+		return []ContributionSuggestion{}
 	}
 	futureValue := totalValue + contribution
 	remaining := contribution
