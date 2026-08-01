@@ -33,6 +33,8 @@ type Snapshot = {
   rebalanceTolerance: number;
   monthlyContribution: number;
   contributionPlan?: Suggestion[] | null;
+  cacheStatus?: "cached" | "refreshed" | "stale";
+  cachedAt?: string;
 };
 
 const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -50,22 +52,29 @@ const pct = (value: number) => `${value.toFixed(1)}%`;
 export default function Home() {
   const [data, setData] = useState<Snapshot>();
   const [error, setError] = useState<string>();
-  const load = async () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const load = async (force = false) => {
     setError(undefined);
+    if (force) setIsRefreshing(true);
     try {
-      const response = await fetch(`${api}/api/v1/portfolio`);
+      const response = await fetch(
+        `${api}/api/v1/portfolio${force ? "/refresh" : ""}`,
+        { method: force ? "POST" : "GET", cache: "no-store" },
+      );
       if (!response.ok) throw new Error("Portfolio unavailable");
       setData(await response.json());
     } catch {
       setError(
         "Couldn’t reach the portfolio service. Start the API, then refresh.",
       );
+    } finally {
+      if (force) setIsRefreshing(false);
     }
   };
   useEffect(() => {
     void load();
   }, []);
-  if (error)
+  if (error && !data)
     return (
       <main className="shell">
         <p className="eyebrow">OPEN PORTFOLIO TRACKER</p>
@@ -92,14 +101,30 @@ export default function Home() {
             A low-effort view of your {data.broker} portfolio and plan.
           </p>
         </div>
-        <button onClick={() => void load()}>Refresh</button>
+        <button
+          disabled={isRefreshing}
+          onClick={() => void load(true)}
+          aria-busy={isRefreshing}
+        >
+          {isRefreshing ? "Refreshing…" : "Refresh"}
+        </button>
       </header>
+      {error && <p className="error-message">{error}</p>}
       {data.mode === "demo" && (
         <aside>
           <strong>Demo portfolio</strong>
           <span>
             Add broker credentials to <code>backend/.env</code> to see live
             holdings.
+          </span>
+        </aside>
+      )}
+      {data.cacheStatus === "stale" && (
+        <aside className="warning">
+          <strong>Showing saved portfolio data</strong>
+          <span>
+            The latest broker refresh was unavailable. Try refreshing again
+            later.
           </span>
         </aside>
       )}
@@ -112,6 +137,9 @@ export default function Home() {
             dateStyle: "medium",
             timeStyle: "short",
           }).format(new Date(data.updatedAt))}
+          {data.cachedAt &&
+            data.cacheStatus === "cached" &&
+            " · loaded from cache"}
         </span>
       </section>
       <section className="grid">

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -18,6 +19,7 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /api/v1/portfolio", s.portfolio)
+	mux.HandleFunc("POST /api/v1/portfolio/refresh", s.refresh)
 	return cors(mux)
 }
 
@@ -31,7 +33,25 @@ func (s *Server) portfolio(w http.ResponseWriter, r *http.Request) {
 	snapshot, err := s.provider.Snapshot(r.Context())
 	if err != nil {
 		log.Printf("portfolio request failed: %v", err)
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "Unable to fetch your Tiger portfolio. Check the API credentials and account permissions."})
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "Unable to fetch your portfolio. Check the broker connection and account permissions."})
+		return
+	}
+	writeJSON(w, http.StatusOK, snapshot)
+}
+
+// refresh bypasses the hourly cache and fetches a new portfolio snapshot.
+func (s *Server) refresh(w http.ResponseWriter, r *http.Request) {
+	refresher, ok := s.provider.(interface {
+		Refresh(context.Context) (portfolio.Snapshot, error)
+	})
+	if !ok {
+		writeJSON(w, http.StatusNotImplemented, map[string]string{"error": "Portfolio refresh is not configured."})
+		return
+	}
+	snapshot, err := refresher.Refresh(r.Context())
+	if err != nil {
+		log.Printf("portfolio refresh failed: %v", err)
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "Unable to refresh your portfolio. Check the broker connection and account permissions."})
 		return
 	}
 	writeJSON(w, http.StatusOK, snapshot)
@@ -48,7 +68,7 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

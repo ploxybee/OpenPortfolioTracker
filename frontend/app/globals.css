@@ -60,6 +60,10 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 aside {
   display: flex;
   gap: 14px;
@@ -72,6 +76,17 @@ aside {
 }
 aside span {
   color: #506247;
+}
+.warning {
+  background: #fff4d9;
+  border-color: #f0d69b;
+}
+.warning span,
+.error-message {
+  color: #805a13;
+}
+.error-message {
+  margin: -18px 0 20px;
 }
 .hero {
   background: var(--deep);
